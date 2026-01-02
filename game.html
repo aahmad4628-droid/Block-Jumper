@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jumping Block Escape</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#fff; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; }
+  canvas { background:#000; display:block; border:2px solid #fff; }
+  #restartBtn {
+    display:none;
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    padding:15px 30px;
+    font-size:20px;
+    background:white;
+    color:black;
+    border:none;
+    cursor:pointer;
+    border-radius:10px;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+<button id="restartBtn">Restart</button>
+
+<script>
+// Canvas setup
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const restartBtn = document.getElementById('restartBtn');
+
+// Game variables
+let player, obstacles, frames, score, gameOver;
+
+// Sounds
+const jumpSound = new Audio('https://freesound.org/data/previews/331/331912_3248244-lq.mp3');
+const hitSound = new Audio('https://freesound.org/data/previews/64/64597_634166-lq.mp3');
+const coinSound = new Audio('https://freesound.org/data/previews/146/146724_2398401-lq.mp3');
+
+// Initialize game
+function initGame(){
+    player = { x:50, y:500, width:30, height:30, color:'white', dy:0, gravity:0.8, jump:15 };
+    obstacles = [];
+    frames = 0;
+    score = 0;
+    gameOver = false;
+    restartBtn.style.display = 'none';
+}
+
+// Controls
+document.addEventListener('keydown', (e)=>{
+    if((e.code === 'Space' || e.code === 'ArrowUp') && !gameOver){
+        player.dy = -player.jump;
+        jumpSound.play();
+    }
+});
+
+// Touch for mobile
+canvas.addEventListener('touchstart', ()=>{
+    if(!gameOver){
+        player.dy = -player.jump;
+        jumpSound.play();
+    }
+});
+
+// Restart button
+restartBtn.addEventListener('click', ()=>{
+    initGame();
+    update();
+});
+
+// Obstacle generator
+function spawnObstacle(){
+    let width = Math.random() * 50 + 20;
+    let height = Math.random() * 20 + 20;
+    let x = canvas.width;
+    let y = canvas.height - height;
+    obstacles.push({x, y, width, height, color:'white'});
+}
+
+// Game loop
+function update(){
+    if(gameOver){
+        restartBtn.style.display = 'block';
+        return;
+    }
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Player physics
+    player.dy += player.gravity;
+    player.y += player.dy;
+    if(player.y + player.height > canvas.height){
+        player.y = canvas.height - player.height;
+        player.dy = 0;
+    }
+
+    // Draw player
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Obstacles
+    if(frames % 90 === 0) spawnObstacle();
+    obstacles.forEach((obs, index)=>{
+        obs.x -= 5;
+        ctx.fillStyle = obs.color;
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+
+        // Collision detection
+        if(player.x < obs.x + obs.width &&
+           player.x + player.width > obs.x &&
+           player.y < obs.y + obs.height &&
+           player.y + player.height > obs.y){
+            hitSound.play();
+            gameOver = true;
+        }
+
+        // Remove offscreen obstacles
+        if(obs.x + obs.width < 0){
+            obstacles.splice(index,1);
+            score++;
+            coinSound.play();
+        }
+    });
+
+    // Score
+    ctx.fillStyle = 'white';
+    ctx.font = '20px Arial';
+    ctx.fillText('Score: ' + score, 10, 30);
+
+    frames++;
+    requestAnimationFrame(update);
+}
+
+// Start game
+initGame();
+update();
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
